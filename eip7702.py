@@ -173,6 +173,34 @@ class Network:
             return "0x" + account.code[3:].hex()
         return None
 
+    def delegated_accounts(self):
+        """(address, delegate) pairs for every account currently delegated.
+
+        >>> net = Network(chain_id=1)
+        >>> alice = net.create_account("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        ...                            secret=b"alice-secret")
+        >>> bob = net.create_account("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        ...                          secret=b"bob-secret")
+        >>> batcher = "0xcccccccccccccccccccccccccccccccccccccccc"
+        >>> net.register_contract(batcher, "BatchExecutor")
+        >>> net.delegated_accounts()
+        []
+        >>> code = net.apply_authorization(alice, alice.authorize(1, batcher))
+        >>> code == delegation_code(batcher)
+        True
+        >>> net.delegated_accounts()
+        [('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '0xcccccccccccccccccccccccccccccccccccccccc')]
+        >>> net.apply_authorization(alice, alice.authorize(1, ZERO_ADDRESS))
+        b''
+        >>> net.delegated_accounts()
+        []
+        """
+        return [
+            (address, self.delegated_to(account))
+            for address, account in self.accounts.items()
+            if self.delegated_to(account) is not None
+        ]
+
     def apply_authorization(self, account, authorization, signature=None):
         """Apply one authorization tuple, performing every client check.
 
